@@ -36,8 +36,6 @@
 uint8_t times[] = {170, 171, 171};
 uint8_t timeInd = 0;
 
-uint8_t endOfCycle = 0;
-
 void init(void) {
   DDRB = (1<<coilPin); // Pin to drive the coil
   PORTB |= ((1<<PB2) | (1<<PB1)); // Turn on pull-up resistors on other ports to save power
@@ -48,10 +46,24 @@ void init(void) {
   // Set prescaler to 256 
   sbi(TCCR1, CS13);
   sbi(TCCR1, CS10);
+
+  // Reset counter when OCR1C match
+  sbi(TCCR1, CTC1);
 	
   // Enable timer 1 compare interrupts
-  sbi(TIMSK, TOIE1); 
+  sbi(TIMSK, OCIE1A); 
+  sbi(TIMSK, OCIE1B); 
 
+  // Set up the timer compare registers
+  OCR1A = 25; // approx 200mS
+  OCR1B = times[0];
+  OCR1C = times[0];
+
+  PORTB |= (1<<coilPin);
+
+  // Reset counter
+  TCNT1 = 0;
+  
   // Enable interrupts
   sei();
 }
@@ -66,26 +78,23 @@ int main(void) {
      */
     set_sleep_mode(SLEEP_MODE_IDLE);
     sleep_mode();
-
-    if (endOfCycle) {
-      endOfCycle = 0;
-
-      
-      timeInd++;
-      if (timeInd >= sizeof(times)) {
-	timeInd = 0;
-      }
-    }
   }
 }
 
 // Timer 1 compare interrupts
 
 ISR(TIM1_COMPA_vect) {
-  PORTB |= (1<<coilPin);
+  PORTB &= ~(1<<coilPin);
 }
 
 ISR(TIM1_COMPB_vect) {
-  PORTB &= ~(1<<coilPin);
-  endOfCycle = 1;
+  PORTB |= (1<<coilPin);
+
+  OCR1B = times[timeInd];
+  OCR1C = times[timeInd];
+
+  timeInd++;
+  if (timeInd >= sizeof(times)) {
+    timeInd = 0;
+  }
 }
