@@ -42,9 +42,13 @@ void init(void) {
 
   // Disable interrupts while we set things up
   cli();
-	
+
+  // Make sure Timer1 is in synchronous mode, i.e. clocked by the system clock.
+  cbi(PLLCSR, PCKE);
+  
   // Set prescaler to 256 
   sbi(TCCR1, CS13);
+  sbi(TCCR1, CS11);
   sbi(TCCR1, CS10);
 
   // Reset counter when OCR1C match
@@ -55,9 +59,9 @@ void init(void) {
   sbi(TIMSK, OCIE1B); 
 
   // Set up the timer compare registers
-  OCR1A = 25; // approx 200mS
-  OCR1B = times[0];
-  OCR1C = times[0];
+  OCR1A = 25;            // approx 200mS
+  OCR1B = 170; //times[0];
+  OCR1C = 170; //times[0];
 
   PORTB |= (1<<coilPin);
 
@@ -90,11 +94,11 @@ ISR(TIM1_COMPA_vect) {
 ISR(TIM1_COMPB_vect) {
   PORTB |= (1<<coilPin);
 
-  OCR1B = times[timeInd];
-  OCR1C = times[timeInd];
+  //OCR1B = times[timeInd];
+  //OCR1C = times[timeInd];
 
-  timeInd++;
-  if (timeInd >= sizeof(times)) {
-    timeInd = 0;
-  }
+  //timeInd++;
+  //if (timeInd >= sizeof(times)) {
+  //  timeInd = 0;
+  //}
 }
