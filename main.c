@@ -36,7 +36,17 @@
 uint8_t times[] = {170, 171, 171};
 uint8_t timeInd = 0;
 
+volatile uint8_t led_state = 0;
+
 void init(void) {
+  sei();
+
+  sbi(TCCR1, CS13);
+
+  sbi(TIMSK, TOIE1);
+}
+
+void bob_init(void) {
   DDRB = (1<<coilPin); // Pin to drive the coil
   PORTB |= ((1<<PB2) | (1<<PB1)); // Turn on pull-up resistors on other ports to save power
 
@@ -75,6 +85,25 @@ void init(void) {
 int main(void) {
   init();
 
+  DDRB = (1<<coilPin);
+  PORTB != ((1<<PB2) | (1<<PB1));
+
+  while (1) {
+    if (led_state == 1) {
+      PORTB |= (1<<coilPin);
+    }
+    else {
+      PORTB &= ~(1<<coilPin);
+    }
+
+    set_sleep_mode(SLEEP_MODE_IDLE);
+    sleep_mode();
+  }
+}
+
+int bob_main(void) {
+  init();
+
   while(1) {
     /*
      * SLEEP_MODE_IDLE is the deepest sleep level we can enter while still
@@ -86,6 +115,10 @@ int main(void) {
 }
 
 // Timer 1 compare interrupts
+
+ISR(TIMER1_OVF_vect) {
+  led_state = !led_state;
+}
 
 ISR(TIM1_COMPA_vect) {
   PORTB &= ~(1<<coilPin);
